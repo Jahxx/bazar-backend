@@ -1,85 +1,77 @@
 package com.jahxx.plugins
 
-import com.jahxx.model.*
+import com.jahxx.model.SaleRequest
+import com.jahxx.repository.ProductRepository
+import com.jahxx.repository.SaleRepository
 import io.ktor.http.HttpStatusCode
 import io.ktor.serialization.JsonConvertException
 import io.ktor.server.application.*
 import io.ktor.server.http.content.*
+import io.ktor.server.plugins.statuspages.*
 import io.ktor.server.request.receive
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 
-fun Application.configureRouting() {
+fun Application.configureRouting(
+    productRepository: ProductRepository,
+    saleRepository: SaleRepository
+) {
+    install(StatusPages) {
+        exception<Throwable> { call, cause ->
+            call.respondText(text = "500: $cause", status = HttpStatusCode.InternalServerError)
+        }
+    }
     routing {
-        staticResources("static", "static")
+        staticResources("/static", "static")
 
-        route("/tasks") {
-            get {
-                val tasks = TaskRepository.allTasks()
-                call.respond(tasks)
+        route("/api") {
+            // GET: para obtener productos con búsqueda "q"
+            get("/items") {
+                val query = call.request.queryParameters["q"]
+                val page = call.request.queryParameters["page"]?.toIntOrNull() ?: 1
+                val limit = call.request.queryParameters["limit"]?.toIntOrNull() ?: 10
+
+                val products = productRepository.allProducts(query, page, limit)
+                call.respond(products)
             }
 
-            get("/byName/{taskName}") {
-                val name = call.parameters["taskName"]
-                if (name == null) {
-                    call.respond(HttpStatusCode.BadRequest)
+            // GET: para obtener un producto específico por ID
+            get("/items/{id}") {
+                val id = call.parameters["id"]?.toIntOrNull()
+                if (id == null) {
+                    call.respond(HttpStatusCode.BadRequest, "Invalid ID")
                     return@get
                 }
-
-                val task = TaskRepository.taskByName(name)
-                if (task == null) {
-                    call.respond(HttpStatusCode.NotFound)
+                val product = productRepository.productById(id)
+                if (product == null) {
+                    call.respond(HttpStatusCode.NotFound, "Product not found")
                     return@get
                 }
-
-                call.respond(task)
+                call.respond(product)
             }
 
-            get("/byPriority/{priority}") {
-                val priorityAsText = call.parameters["priority"]
-                if (priorityAsText == null) {
-                    call.respond(HttpStatusCode.BadRequest)
-                    return@get
-                }
-
+            // POST: para registrar una venta
+            post("/addSale") {
                 try {
-                    val priority = Priority.valueOf(priorityAsText)
-                    val tasks = TaskRepository.tasksByPriority(priority)
+                    val saleRequest = call.receive<SaleRequest>()
+                    val response = saleRepository.addSale(saleRequest)
 
-                    if (tasks.isEmpty()) {
-                        call.respond(HttpStatusCode.NotFound)
-                        return@get
+                    if (response) {
+                        call.respond(HttpStatusCode.Created, "Sale registered successfully")
+                    } else {
+                        call.respond(HttpStatusCode.BadRequest, "Failed to register sale, possibly invalid data")
                     }
-                    call.respond(tasks)
-                } catch (_: IllegalArgumentException) {
-                    call.respond(HttpStatusCode.BadRequest)
+                } catch (e: IllegalStateException) {
+                    call.respond(HttpStatusCode.BadRequest, "Invalid sale data: ${e.localizedMessage}")
+                } catch (e: JsonConvertException) {
+                    call.respond(HttpStatusCode.BadRequest, "Error processing JSON: ${e.localizedMessage}")
                 }
             }
 
-            post {
-                try {
-                    val task = call.receive<Task>()
-                    TaskRepository.addTask(task)
-                    call.respond(HttpStatusCode.NoContent)
-                } catch (_: IllegalStateException) {
-                    call.respond(HttpStatusCode.BadRequest)
-                } catch (_: JsonConvertException) {
-                    call.respond(HttpStatusCode.BadRequest)
-                }
-            }
-
-            delete("/{taskName}") {
-                val name = call.parameters["taskName"]
-                if (name == null) {
-                    call.respond(HttpStatusCode.BadRequest)
-                    return@delete
-                }
-
-                if (TaskRepository.removeTask(name)) {
-                    call.respond(HttpStatusCode.NoContent)
-                } else {
-                    call.respond(HttpStatusCode.NotFound)
-                }
+            // GET: para obtener todas las ventas
+            get("/sales") {
+                val sales = saleRepository.allSales()
+                call.respond(sales)
             }
         }
     }

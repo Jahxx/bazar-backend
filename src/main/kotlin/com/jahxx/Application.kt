@@ -1,6 +1,8 @@
 package com.jahxx
 
 import com.jahxx.plugins.*
+import com.jahxx.repository.ProductRepositoryImpl
+import com.jahxx.repository.SaleRepositoryImpl
 import io.ktor.server.application.*
 
 fun main(args: Array<String>) {
@@ -8,6 +10,10 @@ fun main(args: Array<String>) {
 }
 
 fun Application.module() {
+    val productRepository = ProductRepositoryImpl()
+    val saleRepository = SaleRepositoryImpl()
+
     configureSerialization()
-    configureRouting()
+    configureDatabases()
+    configureRouting(productRepository, saleRepository)
 }

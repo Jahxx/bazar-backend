@@ -1,17 +1,19 @@
-GET http://127.0.0.1:8080/tasks/byPriority/Medium
-Accept: application/json
+### Obtener productos con la búsqueda "home" en la página 1, límite 10
+GET http://localhost:8080/api/items?q=home&page=1&limit=10
 
-###
+### Obtener un producto con ID 26
+GET http://localhost:8080/api/items/26
 
-POST http://127.0.0.1:8080/tasks
+### Registrar una venta
+POST http://localhost:8080/api/addSale
 Content-Type: application/json
 
 {
-  "name": "cooking",
-  "description": "Cook the dinner",
-  "priority": "High"
+  "productId": 26,
+  "quantity": 2,
+  "totalPrice": 82.00,
+  "purchaseDate": "2024-11-07T12:00:00"
 }
 
-###
-
-DELETE http://127.0.0.1:8080/tasks/gardening
+### Obtener todas las ventas
+GET http://localhost:8080/api/sales
