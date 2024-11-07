@@ -14,7 +14,7 @@ WORKDIR /usr/src/app
 RUN gradle buildFatJar --no-daemon -parallel --configure-on-demand
 
 # Create the Runtime Image
-FROM bellsoft/liberica-runtime-container:jre-21 AS runtime
+FROM openjdk:21-jre-slim AS runtime
 EXPOSE 8080
 RUN mkdir /app
 COPY --from=build /home/gradle/src/build/libs/*-all.jar /app/ktor-bazar.jar
