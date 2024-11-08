@@ -1,0 +1,22 @@
+### Obtener productos en la página 1, límite 10
+GET https://api-bazar-yphp.onrender.com/api/items?page=1&limit=10
+
+### Obtener productos con la búsqueda "home" en la página 1, límite 10
+GET https://api-bazar-yphp.onrender.com/api/items?q=home&page=1&limit=10
+
+### Obtener un producto con ID 26
+GET https://api-bazar-yphp.onrender.com/api/items/26
+
+### Registrar una venta
+POST https://api-bazar-yphp.onrender.com/api/addSale
+Content-Type: application/json
+
+{
+  "productId": 26,
+  "quantity": 2,
+  "totalPrice": 82.00,
+  "purchaseDate": "2024-11-07T12:00:00"
+}
+
+### Obtener todas las ventas
+GET https://api-bazar-yphp.onrender.com/api/sales
